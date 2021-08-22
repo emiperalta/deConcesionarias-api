@@ -1,14 +1,19 @@
-const { Vehicle } = require('../models');
+const { Vehicle, VehicleProperty } = require('../models');
 
 module.exports = {
   getAll: async (req, res) => {
-    const vehicles = await Vehicle.findAll();
+    const vehicles = await Vehicle.findAll({
+      include: [{ model: VehicleProperty, attributes: ['name'] }],
+    });
     res.status(200).json(vehicles);
   },
   getOne: async (req, res) => {
     const { id } = req.params;
     try {
-      const vehicle = await Vehicle.findOne({ where: { id } });
+      const vehicle = await Vehicle.findOne({
+        where: { id },
+        include: [{ model: VehicleProperty, attributes: ['name'] }],
+      });
       if (!vehicle) return res.status(404).json({ error: 'vehicle not found' });
       res.status(200).json(vehicle);
     } catch (error) {
@@ -24,7 +29,7 @@ module.exports = {
       const savedVehicle = await Vehicle.create(newVehicle);
       res.status(201).json(savedVehicle);
     } catch (error) {
-      res.status(400).json(error);
+      res.status(400).json({ error: error.message });
     }
   },
   updateOne: async (req, res) => {
