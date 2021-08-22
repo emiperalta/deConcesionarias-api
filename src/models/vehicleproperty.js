@@ -14,7 +14,8 @@ module.exports = (sequelize, DataTypes) => {
   }
   VehicleProperty.init(
     {
-      name: DataTypes.STRING,
+      name: { type: DataTypes.STRING, allowNull: false },
+      CategoryId: { type: DataTypes.INTEGER, allowNull: false },
     },
     {
       sequelize,
