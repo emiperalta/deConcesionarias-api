@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
   }
   PropertyValue.init(
     {
-      value: DataTypes.INTEGER,
+      value: { type: DataTypes.INTEGER, defaultValue: 0 },
     },
     {
       sequelize,
