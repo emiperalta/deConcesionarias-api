@@ -26,7 +26,11 @@ module.exports = {
     };
     try {
       const savedProperty = await VehicleProperty.create(newProperty);
-      res.status(201).json(savedProperty);
+      const propertyToRes = await VehicleProperty.findOne({
+        where: { id: savedProperty.id },
+        include: [{ model: Category, attributes: ['name'] }],
+      });
+      res.status(201).json(propertyToRes);
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
@@ -43,7 +47,11 @@ module.exports = {
       if (!propertyToUpdate)
         return res.status(404).json({ error: 'vehicle property not found' });
       await propertyToUpdate.update(updatedProperty);
-      res.status(204).end();
+      const propertyToRes = await VehicleProperty.findOne({
+        where: { id },
+        include: [{ model: Category, attributes: ['name'] }],
+      });
+      res.status(200).json(propertyToRes);
     } catch (error) {
       res.status(400).json({ error: error.message });
     }
@@ -52,9 +60,9 @@ module.exports = {
     const { id } = req.params;
     try {
       const propertyToDelete = await VehicleProperty.findOne({ where: { id } });
-      console.log({ propertyToDelete });
-      if (!propertyToDelete)
+      if (!propertyToDelete) {
         return res.status(404).json({ error: 'vehicle property not found' });
+      }
       await propertyToDelete.destroy();
       res.status(204).end();
     } catch (error) {
