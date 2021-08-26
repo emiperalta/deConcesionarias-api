@@ -2,7 +2,7 @@
 
 ### To use locally:
 
-1 - Clone de project
+1 - Clone the project
 
 ```javascript
 git clone https://github.com/emiperalta/deConcesionarias-api
