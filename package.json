@@ -8,8 +8,7 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "build": "sequelize db:seed:all --env production"
+    "dev": "nodemon src/server.js"
   },
   "repository": {
     "type": "git",

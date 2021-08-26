@@ -6,4 +6,4 @@ const { PORT } = process.env;
 
 database();
 
-app.listen(PORT, () => console.log(`server running at http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`server running`));
