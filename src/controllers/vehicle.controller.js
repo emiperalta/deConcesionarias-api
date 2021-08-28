@@ -1,4 +1,4 @@
-const { Vehicle, VehicleProperty } = require('../models');
+const { Category, Vehicle, VehicleProperty } = require('../models');
 
 module.exports = {
   getAll: async (req, res) => {
@@ -12,7 +12,9 @@ module.exports = {
     try {
       const vehicle = await Vehicle.findOne({
         where: { id },
-        include: [{ model: VehicleProperty, attributes: ['id', 'name'] }],
+        include: [
+          { model: VehicleProperty, attributes: ['id', 'name'], include: Category },
+        ],
       });
       if (!vehicle) return res.status(404).json({ error: 'vehicle not found' });
       res.status(200).json(vehicle);

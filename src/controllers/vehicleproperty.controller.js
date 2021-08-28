@@ -1,11 +1,23 @@
-const { VehicleProperty, Category } = require('../models');
+const { Category, VehicleProperty, Vehicle } = require('../models');
 
 module.exports = {
   getAll: async (req, res) => {
-    const properties = await VehicleProperty.findAll({
-      include: [{ model: Category, attributes: ['name'] }],
-    });
-    res.status(200).json(properties);
+    const { categoryId, vehicleId } = req.query;
+    let properties;
+    let propertiesByCategory;
+    if (categoryId) {
+      propertiesByCategory = await VehicleProperty.findAll({
+        where: { CategoryId: categoryId },
+        include: [{ model: Vehicle, where: { id: vehicleId } }],
+      });
+    } else {
+      properties = await VehicleProperty.findAll({
+        include: [{ model: Category, attributes: ['name'] }],
+      });
+    }
+    categoryId
+      ? res.status(200).json(propertiesByCategory)
+      : res.status(200).json(properties);
   },
   getOne: async (req, res) => {
     const { id } = req.params;
