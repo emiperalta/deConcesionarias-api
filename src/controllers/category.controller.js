@@ -1,8 +1,10 @@
-const { Category } = require('../models');
+const categoryService = require('../services/category.service');
 
-module.exports = {
-  getAll: async (req, res) => {
-    const categories = await Category.findAll();
-    res.status(200).json(categories);
-  },
+const HTTP_STATUS = require('../constants/http-status');
+
+const getAll = async (req, res) => {
+  const categories = await categoryService.getAllCategories();
+  res.status(HTTP_STATUS.OK).json(categories);
 };
+
+module.exports = { getAll };
