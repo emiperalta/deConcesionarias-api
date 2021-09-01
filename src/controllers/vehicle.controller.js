@@ -1,99 +1,120 @@
 const { Category, Vehicle, VehicleProperty } = require('../models');
 
-module.exports = {
-  getAll: async (req, res) => {
-    const vehicles = await Vehicle.findAll({
+const vehicleService = require('../services/vehicle.service');
+const vehiclePropertyService = require('../services/vehicleproperty.service');
+
+const HTTP_STATUS = require('../constants/http-status');
+
+const getAll = async (req, res) => {
+  try {
+    const vehicles = await vehicleService.getAllVehicles({
       include: [{ model: VehicleProperty, attributes: ['id', 'name'] }],
     });
-    res.status(200).json(vehicles);
-  },
-  getOne: async (req, res) => {
-    const { id } = req.params;
-    try {
-      const vehicle = await Vehicle.findOne({
-        where: { id },
-        include: [
-          { model: VehicleProperty, attributes: ['id', 'name'], include: Category },
-        ],
-      });
-      if (!vehicle) return res.status(404).json({ error: 'vehicle not found' });
-      res.status(200).json(vehicle);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
+    res.status(HTTP_STATUS.OK).json(vehicles);
+  } catch (error) {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({ error: error.message });
+  }
+};
+
+const getOne = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const vehicle = await vehicleService.getVehicleById(id, {
+      include: [
+        { model: VehicleProperty, attributes: ['id', 'name'], include: Category },
+      ],
+    });
+    if (!vehicle) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'vehicle not found' });
     }
-  },
-  createOne: async (req, res) => {
-    const { name, properties } = req.body;
-    const newVehicle = { name };
-    try {
-      const savedVehicle = await Vehicle.create(newVehicle);
-      if (properties.length) {
-        for (const prop of properties) {
-          const propInDb = await VehicleProperty.findOne({
-            where: { id: prop.value },
-          });
-          await savedVehicle.addVehicleProperty(propInDb);
-        }
+    res.status(HTTP_STATUS.OK).json(vehicle);
+  } catch (error) {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({ error: error.message });
+  }
+};
+
+const createOne = async (req, res) => {
+  const { name, properties } = req.body;
+  const newVehicle = { name };
+  try {
+    const savedVehicle = await vehicleService.createVehicle(newVehicle);
+    if (properties && properties.length) {
+      for (const prop of properties) {
+        const propInDb = await vehiclePropertyService.getVehiclePropertyById(
+          prop.value
+        );
+        await savedVehicle.addVehicleProperty(propInDb);
       }
-      const vehicleToRes = await Vehicle.findOne({
-        where: { id: savedVehicle.id },
-        include: [{ model: VehicleProperty, attributes: ['id', 'name'] }],
-      });
-      res.status(201).json(vehicleToRes);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
     }
-  },
-  updateOne: async (req, res) => {
-    const { id } = req.params;
-    const { name, properties } = req.body;
-    const updatedVehicle = { name };
-    try {
-      const vehicleToUpdate = await Vehicle.findOne({ where: { id } });
-      if (!vehicleToUpdate) {
-        return res.status(404).json({ error: 'vehicle not found' });
+    const vehicleToRes = await vehicleService.getVehicleById(savedVehicle.id, {
+      include: [{ model: VehicleProperty, attributes: ['id', 'name'] }],
+    });
+    res.status(HTTP_STATUS.CREATED).json(vehicleToRes);
+  } catch (error) {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({ error: error.message });
+  }
+};
+
+const updateOne = async (req, res) => {
+  const { id } = req.params;
+  const { name, properties } = req.body;
+  const updatedVehicle = { name };
+  try {
+    const vehicleToUpdate = await vehicleService.updateVehicle(id, updatedVehicle);
+    if (vehicleToUpdate[0] === 0) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'vehicle not found' });
+    }
+    if (properties && properties.length) {
+      const vehicle = await vehicleService.getVehicleById(id);
+      for (const prop of properties) {
+        const propInDb = await vehiclePropertyService.getVehiclePropertyById(
+          prop.value
+        );
+        await vehicle.addVehicleProperty(propInDb);
       }
-      await vehicleToUpdate.update(updatedVehicle);
-      if (properties.length) {
-        for (const prop of properties) {
-          const propInDb = await VehicleProperty.findOne({
-            where: { id: prop.value },
-          });
+    }
+    // TODO: fix update when a property is deleted from vehicle
+    /*
+      const associations = await vehicleToUpdate.getVehicleProperties();
+      for (const property of properties) {
+        for (const association of associations) {
+          if (property.value !== association.dataValues.id) {
+            console.log('from client: ', property.value);
+            console.log('from db: ', association.dataValues.id);
+            vehicleToUpdate.removeVehicleProperty(association);
+          }
           await vehicleToUpdate.addVehicleProperty(propInDb);
         }
       }
-      // TODO: fix update when a property is deleted from vehicle
-      // const associations = await vehicleToUpdate.getVehicleProperties();
-      // for (const property of properties) {
-      //   for (const association of associations) {
-      //     if (property.value !== association.dataValues.id) {
-      //       console.log('from client: ', property.value);
-      //       console.log('from db: ', association.dataValues.id);
-      //       vehicleToUpdate.removeVehicleProperty(association);
-      //     }
-      //     await vehicleToUpdate.addVehicleProperty(propInDb);
-      //   }
-      // }
-      const vehicleToRes = await Vehicle.findOne({
-        where: { id },
-        include: [{ model: VehicleProperty, attributes: ['id', 'name'] }],
-      });
-      res.status(200).json(vehicleToRes);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
+    */
+    const vehicleToRes = await vehicleService.getVehicleById(id, {
+      include: [{ model: VehicleProperty, attributes: ['id', 'name'] }],
+    });
+    res.status(HTTP_STATUS.OK).json(vehicleToRes);
+  } catch (error) {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({ error: error.message });
+  }
+};
+
+const deleteOne = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const vehicleToDelete = await vehicleService.getVehicleById(id);
+    if (!vehicleToDelete) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'vehicle not found' });
     }
-  },
-  deleteOne: async (req, res) => {
-    const { id } = req.params;
-    try {
-      const vehicleToDelete = await Vehicle.findOne({ where: { id } });
-      if (!vehicleToDelete)
-        return res.status(404).json({ error: 'vehicle not found' });
-      await vehicleToDelete.removeVehicleProperties();
-      await vehicleToDelete.destroy();
-      res.status(204).end();
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
-  },
+    await vehicleToDelete.removeVehicleProperties();
+    await vehicleService.deleteVehicle(id);
+    res.status(HTTP_STATUS.NO_CONTENT).end();
+  } catch (error) {
+    res.status(HTTP_STATUS.BAD_REQUEST).json({ error: error.message });
+  }
+};
+
+module.exports = {
+  createOne,
+  deleteOne,
+  getAll,
+  getOne,
+  updateOne,
 };
