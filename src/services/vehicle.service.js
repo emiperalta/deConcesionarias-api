@@ -1,4 +1,4 @@
-const { Category, Vehicle, VehicleProperty } = require('../models');
+const { Vehicle } = require('../models');
 
 const getAllVehicles = async (filters = {}) => {
   return await Vehicle.findAll(filters);
