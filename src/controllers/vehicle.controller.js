@@ -73,20 +73,6 @@ const updateOne = async (req, res) => {
         await vehicle.addVehicleProperty(propInDb);
       }
     }
-    // TODO: fix update when a property is deleted from vehicle
-    /*
-      const associations = await vehicleToUpdate.getVehicleProperties();
-      for (const property of properties) {
-        for (const association of associations) {
-          if (property.value !== association.dataValues.id) {
-            console.log('from client: ', property.value);
-            console.log('from db: ', association.dataValues.id);
-            vehicleToUpdate.removeVehicleProperty(association);
-          }
-          await vehicleToUpdate.addVehicleProperty(propInDb);
-        }
-      }
-    */
     const vehicleToRes = await vehicleService.getVehicleById(id, {
       include: [{ model: VehicleProperty, attributes: ['id', 'name'] }],
     });
@@ -98,13 +84,26 @@ const updateOne = async (req, res) => {
 
 const deleteOne = async (req, res) => {
   const { id } = req.params;
+  const { propertyId } = req.query;
   try {
-    const vehicleToDelete = await vehicleService.getVehicleById(id);
-    if (!vehicleToDelete) {
+    const vehicle = await vehicleService.getVehicleById(id);
+    if (!vehicle) {
       return res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'vehicle not found' });
     }
-    await vehicleToDelete.removeVehicleProperties();
-    await vehicleService.deleteVehicle(id);
+    if (propertyId) {
+      const propertyToDelete = await vehiclePropertyService.getVehiclePropertyById(
+        propertyId
+      );
+      if (!propertyToDelete) {
+        return res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json({ error: 'vehicle property not found' });
+      }
+      await vehicle.removeVehicleProperty(propertyToDelete);
+    } else {
+      await vehicle.removeVehicleProperties();
+      await vehicleService.deleteVehicle(id);
+    }
     res.status(HTTP_STATUS.NO_CONTENT).end();
   } catch (error) {
     res.status(HTTP_STATUS.BAD_REQUEST).json({ error: error.message });
